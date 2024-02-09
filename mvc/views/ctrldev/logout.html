@@ -1,0 +1,18 @@
+<script>
+    async function realizarLogout(){
+        try{
+            const responde = await fetch('/destroi');
+            if(response.ok){
+                const data = await response.json();
+                alert(data.message);
+                window.location.href = '/admin';
+            }else{
+                alert('Erro ao fazer logout. Tente novamente');
+            }
+        }catch(error){
+            console.error('Erro ao fazer logout. Tente novamente')
+        }
+    }
+    realizarLogout()
+
+</script>
