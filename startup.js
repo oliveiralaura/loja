@@ -3,11 +3,14 @@ const bodyParser = require('body-parser');
 const express = require("express");
 const banco = require('./repository/database');
 const session = require('express-session');
-const crypto = require('crypto')
+const crypto = require('crypto');
+const GamerDAO = require('./DAO/gamerDAO');
+
 
 const app = express()
 
-const consign = require("consign")
+const consign = require("consign");
+const gamerDAO = require('./DAO/gamerDAO');
 
 app.set('view engine', 'ejs')
 app.set('views','mvc/views/ctrldev')
@@ -36,7 +39,9 @@ app.use(express.static(path.resolve(__dirname, "./mvc/views/ctrldev")));
 // Rota para a página inicial
 app.get("/admin", async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.sendFile(path.resolve(__dirname, "./mvc/views/ctrldev", "index.html"));
+    const gamer = new gamerDAO()
+    let lista_gamer = await gamer.consultarGamers()
+    res.render('index', {gamers: lista_gamer})
 });
 
 // Rota para processar o formulário de login
@@ -60,7 +65,28 @@ app.post('/login', async (req, res) => {
         res.redirect('/error');
     }
 });
+app.post("/registrargamer", async (req, res) => {
+    const gamerDAO = new GamerDAO();
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    const { txtnomegamer, txtemailgamer, txtsenhagamer, txtdatagamer, txtcoingamer, txtpersongamer } = req.body;
+    console.log('txtnomegamer:', txtnomegamer);
+    console.log('txtemailgamer:', txtemailgamer);
 
+    try {
+        const retorno = await gamerDAO.registrarGamer(txtnomegamer, txtemailgamer, txtsenhagamer, txtdatagamer, txtcoingamer, txtpersongamer)
+        if (retorno) {
+            // Se o registro for bem-sucedido, armazene o e-mail na sessão
+            req.session.email = txtemailgamer;
+            res.redirect('/home');
+        } else {
+            // Se o registro falhar, redirecione para error.html
+            res.redirect('/error');
+        }
+    } catch (error) {
+        console.error('Erro ao registrar o gamer:', error);
+        res.redirect('/error');
+    }
+});
 
 
 
@@ -68,10 +94,10 @@ app.use((req, res, next) =>{
     if(req.url === '/admin'){
         next();
     }else if(req.session && req.session.email){
-        next()
+        next();
     }else{
-        res.redirect('/admin')
-    }
+        res.redirect('/admin');
+    };
 })
 
 // Rota para a página home
@@ -96,7 +122,8 @@ app.get('/destroi', (req,res)=>{
             res.status(500).send('Erro interno ao fazer logout');
             
         }else{
-            res.json({message: 'Sessão destruídacom sucesso.'})
+           
+            res.sendFile(path.resolve('mvc/views/ctrldev/index'));
         }
     })
 })
